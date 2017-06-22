@@ -1,0 +1,150 @@
+---
+title: "Population of Ghent, Belgium, by Neighbourhood"
+author: "Mathias Mathieu"
+date: "22/06/2017"
+output:
+    ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Population of Ghent
+
+```{r plot,warning=FALSE,message=FALSE,cache=TRUE}
+library(dplyr)
+library(tidyr)
+library(plotly)
+
+#download the data files if they don't exist
+if(!file.exists("population.csv")){
+    download.file(url="https://datatank.stad.gent/4/bevolking/totaalaantalinwoners.csv",destfile="population.csv",method="auto")
+}
+
+ghent.pop <- read.csv("population.csv",sep=";",header=TRUE)
+
+ghent.pop <- ghent.pop %>%
+    rename(neighbourhood=wijk) %>%
+    gather("year","population",year_1999:year_2010) %>%
+    mutate(year=as.integer(substr(year,6,9))) %>%
+    mutate(population=as.integer(population)) %>%
+    group_by(year) %>%
+    mutate(proportion=population/sum(population)) %>%
+    ungroup
+
+total.by.year <- ghent.pop %>%
+    group_by(year) %>%
+    summarise(total=sum(population)) %>%
+    ungroup
+
+marker=list(line=list(color = 'rgb(0,0,0)',width = 1.5))
+text.bar=with(ghent.pop,sprintf("Year: %s\nNeighbourhood:\n%s\nPopulation: %s\nProportion: %2.2f%%"
+                                ,year,neighbourhood,population,100*proportion))
+text.scatter=with(total.by.year,sprintf("Year: %s\nTotal: %s",year,total))
+
+plot_ly(ghent.pop) %>%
+    add_trace(x=~year, 
+              y=~population, 
+              color=~neighbourhood, 
+              type="bar", 
+              marker=~marker, 
+              text=~text.bar, 
+              hoverinfo="text") %>%
+    add_trace(x=~total.by.year$year, 
+              y=~total.by.year$total, 
+              name="Total", 
+              type="scatter", 
+              mode="lines+markers",
+              text=~text.scatter,
+              hoverinfo="text") %>%
+    layout(xaxis=list(title="Year"),
+           yaxis=list(title="Population"),
+           barmode="relative")
+```
+
+## Code
+
+```{r code1,echo=TRUE,eval=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(plotly)
+
+#download the data files if they don't exist
+if(!file.exists("population.csv")){
+    download.file(url="https://datatank.stad.gent/4/bevolking
+                  /totaalaantalinwoners.csv",
+                  destfile="population.csv",
+                  method="auto")
+}
+
+#read data set
+ghent.pop <- read.csv("population.csv",sep=";",header=TRUE)
+
+```
+
+## Code
+
+```{r code2,echo=TRUE,eval=FALSE}
+#transform the data into a suitable format
+ghent.pop <- ghent.pop %>%
+    rename(neighbourhood=wijk) %>%
+    gather("year","population",year_1999:year_2010) %>%
+    mutate(year=as.integer(substr(year,6,9))) %>%
+    mutate(population=as.integer(population)) %>%
+    group_by(year) %>%
+    mutate(proportion=population/sum(population)) %>%
+    ungroup
+
+#calculate totals by year
+total.by.year <- ghent.pop %>%
+    group_by(year) %>%
+    summarise(total=sum(population)) %>%
+    ungroup
+
+```
+
+## Code
+
+```{r code3,echo=TRUE,eval=FALSE}
+
+#generate text to be used in plot
+text.bar=with(ghent.pop,sprintf("Year: %s\n
+                                Neighbourhood:\n%s\n
+                                Population: %s\n
+                                Proportion: %2.2f%%",
+                                year,
+                                neighbourhood,
+                                population,
+                                100*proportion))
+text.scatter=with(total.by.year,sprintf("Year: %s\nTotal: %s",
+                                        year,
+                                        total))
+
+```
+
+## Code 
+
+```{r code4,echo=TRUE,eval=FALSE}
+#plot the data
+plot_ly(ghent.pop) %>%
+    add_trace(x=~year, 
+              y=~population, 
+              color=~neighbourhood, 
+              type="bar", 
+              marker=list(line=list(color = 'rgb(0,0,0)',width = 1.5)), 
+              text=~text.bar, 
+              hoverinfo="text") %>%
+    add_trace(x=~total.by.year$year, 
+              y=~total.by.year$total, 
+              name="Total", 
+              type="scatter", 
+              mode="lines+markers",
+              text=~text.scatter,
+              hoverinfo="text") %>%
+    layout(xaxis=list(title="Year"),
+           yaxis=list(title="Population"),
+           barmode="relative")
+```
+
